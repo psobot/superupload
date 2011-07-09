@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SuperUpload</title>
+        <style type="text/css">
+            body {
+                font-family: "Helvetica", "Arial", sans-serif;
+                margin: 0 auto;
+                padding: 20px;
+                width: 600px;
+                text-align: center;
+            }
+            h1 {
+                width: 494px;
+                height: 83px;
+                background: url(logo.png) no-repeat;
+                display: block;
+                margin: 10px auto;
+                text-indent: -5000px;
+            }
+            a {
+                color: #aaa;
+            }
+            #progress a {
+                color: #fff;
+            }
+            #progress {
+                margin: 10px auto;
+                position: relative;
+                width: 100%;
+            }
+            .bar {
+                position: absolute;
+                z-index: 1;
+                top: 0;
+                left: 0;
+                display: block;
+                width: 0;
+                height: 30px;
+                background: #ff840c;
+                border-radius: 5px;
+                -moz-border-radius: 5px;
+                -o-border-radius: 5px;
+                -webkit-border-radius: 5px; 
+            }
+            .number {
+                position: relative;
+                z-index: 5;
+                padding-top: 7px;
+            }
+            iframe {
+                display: none;
+            }
+            textarea {
+                width: 50%;
+                margin: 0 10px;
+            }
+            #descriptionContainer {
+                margin-top: 30px;
+                display: none;
+                position: relative;
+            }
+            #descriptionForm {
+                position: relative;
+            }
+            #descriptionForm input {
+                position: relative;
+                top: -12px;
+            }
+            #saveStatus {
+                position: absolute;
+                float: right;
+                top: 8px;
+                right: 25px;
+                display: none;
+            }
+            #footer {
+                margin-top: 70px;
+                padding-top: 30px;
+                border-top: 1px solid #ccc;
+                color: #999;
+            }
+        </style>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+        <script type="text/javascript">
+            //  Generate a random GUID-like code to identify an upload with.
+            var guid = (((1+Math.random())*0x10000)|0).toString(8);
+
+            //  How often the client should poll for progress updates.
+            var progressTimeout = 250;
+
+            //  Asks server for progress of current upload.
+            function checkProgress(){
+                $.ajax({
+                    url: "/progress",
+                    dataType: 'json',
+                    type: 'GET',
+                    data: {
+                        'guid': guid
+                    },
+                    success: function(data){
+                        if( data.bytesReceived != null && data.bytesExpected != null){
+                            var progress = Math.round(data.bytesReceived/data.bytesExpected * 10000)/100;
+                            if( progress < 100 ){
+                                $("#progress .number").html(progress + "%");
+                                $("#progress .bar").width(progress + "%");
+                                setTimeout(function(){
+                                    checkProgress();
+                                }, progressTimeout);
+                            }
+                        } else {
+                            setTimeout(function(){
+                                checkProgress();
+                            }, progressTimeout);
+                        }
+                    }
+                });
+            }
+
+            //  Local GUI updates to happen when upload has finished.
+            function finishUpload( url ){
+                $("#progress .bar").width("100%");
+                $("#progress .number").html("<a href='" + url + "'>Uploaded to here.</a>");
+            }
+
+            //  Snazzy little fading animation to provide user feedback for text area.
+            function showResult( text ){
+                var saveStatus = $("#saveStatus");
+                saveStatus.html( text );
+                saveStatus.show();
+                setTimeout( function(){
+                    saveStatus.fadeOut();
+                }, 500);
+            }
+
+            $(document).ready(function(){
+
+                //  Set iFrame and form targets to the proper GUID for identification
+                //  As the query string will arrive before POST vars, this works well.
+                $("#up").attr("action", "upload?guid=" + guid);
+                $("iframe").attr("src", "upload?guid=" + guid);
+
+                //  Submit form as soon as file is chosen.
+                $("#file").change(function(){
+                    $("#up").submit();
+                });
+
+                //  GUI updates and progress polling starts as soon as form is submitted.
+                $("#up").submit(function(){
+                    $(this).slideUp();
+                    $("#descriptionContainer").slideDown();
+                    checkProgress();
+                });
+
+                //  User feedback for description form - if no content, save button should be disabled.
+                $("#descriptionForm textarea").keyup(function(){
+                    $("#descriptionForm input").prop("disabled", $(this).val() == "");
+                });
+
+                //  On submit of description, send to server.
+                $("#descriptionForm").submit(function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        url: '/description',
+                        dataType: 'json',
+                        type: 'POST',
+                        data: {
+                            'guid': guid,
+                            'description': $("#description", this).val()
+                        },
+                        success: function( data ){
+                            showResult("Saved!");
+                        },
+                        error: function( data ){
+                            showResult("Not saved!");
+                        }
+                    });
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h1>
+            SuperUpload
+        </h1>
+
+        <form id="up" target="uploader" action="upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="upload" id="file"></input>
+        </form>
+        <iframe src="upload" name="uploader" id="uploader"></iframe>
+
+        <div id="progress">
+            <div class="number"></div>
+            <div class="bar"></div>
+        </div>
+        <div id="descriptionContainer">
+            <form id="descriptionForm">
+                <textarea id="description"></textarea>
+                <input type="submit" value="Save Description" disabled></input>
+                <div id="saveStatus"></div>
+            </form>
+        </div>
+        <div id="footer">
+            crafted by <a href="http://www.petersobot.com" target="_blank">Peter Sobot</a>
+            for <a href="http://www.soundcloud.com" target="_blank">SoundCloud</a>
+            with <a href="http://nodejs.org" target="_blank">node.js</a>
+        </div>
+    </body>  
+</html>
+
+
+
