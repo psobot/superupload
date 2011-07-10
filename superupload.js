@@ -19,8 +19,8 @@ var formidable = require( 'formidable' ),
 /*
  *  Custom logging method for, well, server logs.
  */
-function log( string ){
-    console.log( (new Date).toString() + "\t" + string );
+function log( string, ip ){
+    console.log( (new Date).toString() + "\t" + ip + "\t" + string );
 }
 /*
  *  Creating our own HTTP server in JS? Madness!
@@ -39,7 +39,7 @@ http.createServer( function( req, res ) {
                 if( req.method.toLowerCase() == 'post' ) {
 
                     //  we have a new upload! Ready the form!
-                    log( "Receiving: \t" + r.query.guid );
+                    log( "Receiving: \t" + r.query.guid, req.socket.remoteAddress );
                     var form = uploads[r.query.guid] = new formidable.IncomingForm();
 
                     //  Handy Formidable method for abstracting away the chunks of data
@@ -56,7 +56,7 @@ http.createServer( function( req, res ) {
                         fs.rename( files.upload.path, localPath, function(){
                             res.writeHead( 200, {'content-type': 'text/html'} ); //essentially returns JSONP to iFrame
                             res.end( "<script type='text/javascript'>parent.finishUpload(\"" + webPath + "\")</script>" );
-                            log( "Uploaded: \t" + r.query.guid + " \t saved to " + localPath );
+                            log( "Uploaded: \t" + r.query.guid + " \t saved to " + localPath, req.socket.remoteAddress );
                         });
                     });
                 } else {
@@ -103,7 +103,7 @@ http.createServer( function( req, res ) {
                     fs.writeFile( localPath, postData.description, function( err ) {
                         res.writeHead( 200 );
                         res.end();
-                        log( "Description: \t" + postData.guid + " \t saved to " + localPath );
+                        log( "Description: \t" + postData.guid + " \t saved to " + localPath, req.socket.remoteAddress );
                     });
                 } else {
                     res.writeHead( 400 );   //resisted the urge to make this 418, "I'm a Teapot"
