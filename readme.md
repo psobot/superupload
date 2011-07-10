@@ -27,7 +27,9 @@ If this were a serious project, actually used in production anywhere, I'd:
 Simple Startup:
 ---------------
 > ./startServer.sh
+
 or
+
 > node superupload.js
 
 Usage:
