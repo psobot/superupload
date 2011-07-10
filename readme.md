@@ -16,6 +16,7 @@ jQuery is used on the front end to allow easy-to-read code while providing nice 
 Todo:
 -----
 If this were a serious project, actually used in production anywhere, I'd:
+
  - Move the backend to a database instead of simple file-based storage
  - Implement a proper router in Node
  - Add more descriptive, more useful logging output
